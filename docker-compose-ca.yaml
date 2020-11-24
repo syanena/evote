@@ -1,0 +1,38 @@
+version: '2'
+
+networks:
+    BDTVote:
+services:
+    # #Orderer CA
+    # ca.orderer.example.com:
+    #     image: hyperledger/fabric-ca
+    #     environment: 
+    #         - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+    #         - FABRIC_CA_SERVER_CA_NAME=ca.orderer.example.com
+    #         - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.orderer.example.com-cert.pem
+    #         - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/23989db63f689b0e281969ddf72cf69eebca543be46638615c12224f2824d862_sk
+    #     ports: 
+    #         - "17075:17075"
+    #     command: sh -c 'fabric-ca-server start -b admin:adminpw'
+    #     volumes: 
+    #         - ./crypto-config/ordererOrganizations/orderer.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    #     container_name: ca.orderer.example.com
+    #     networks:
+    #         - BDTVote
+
+    #Peer CA
+    ca.org1.example.com:
+        image: hyperledger/fabric-ca
+        environment: 
+            - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+            - FABRIC_CA_SERVER_CA_NAME=ca.org1.example.com
+            - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
+            - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/c9790d5dcfc6650a3910d1a323b5aa8e742b4abaf227e14468f915c688547298_sk
+        ports: 
+            - 7054:7054
+        command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+        volumes: 
+            - ./crypto-config/peerOrganizations/org1.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+        container_name: ca.org1.example.com
+        networks:
+            - BDTVote

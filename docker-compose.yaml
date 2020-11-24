@@ -1,0 +1,162 @@
+# Copyright ICRAFT-BDT
+version: '2'
+
+networks:
+    BDTVote:
+services:
+    # #Orderer CA
+    # ca.orderer.example.com:
+    #     image: hyperledger/fabric-ca
+    #     environment: 
+    #         - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+    #         - FABRIC_CA_SERVER_CA_NAME=ca.orderer.example.com
+    #         - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.orderer.example.com-cert.pem
+    #         - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/23989db63f689b0e281969ddf72cf69eebca543be46638615c12224f2824d862_sk
+    #     ports: 
+    #         - "17075:17075"
+    #     command: sh -c 'fabric-ca-server start -b admin:adminpw'
+    #     volumes: 
+    #         - ./crypto-config/ordererOrganizations/orderer.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    #     container_name: ca.orderer.example.com
+    #     networks:
+    #         - BDTVote
+    # #Peer CA
+    # ca.org1.example.com:
+    #     image: hyperledger/fabric-ca
+    #     environment: 
+    #         - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+    #         - FABRIC_CA_SERVER_CA_NAME=ca.org1.example.com
+    #         - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
+    #         - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/b643f9e092de9a72aa3fe636cb1288a9d2258e8f3fe92a4e808c7612bbc4773f_sk
+    #     ports: 
+    #         - "17070:17070"
+    #     command: sh -c 'fabric-ca-server start -b admin:adminpw'
+    #     volumes: 
+    #         - ./crypto-config/peerOrganizations/org1.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    #     container_name: ca.org1.example.com
+    #     networks:
+    #         - BDTVote
+
+    orderer.example.com:
+        container_name: orderer.example.com
+        image: hyperledger/fabric-orderer${DOCKER_IMG_TAG}
+        environment: 
+            - ORDERER_GENERAL_LOGLEVEL=debug
+            - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+            - ORDERER_GENERAL_GENESISMETHOD=file
+            - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/genesis.block
+            - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+            - ORDERER_GENERAL_LOCALMSPDIR=/etc/hyperledger/msp/orderer/msp
+        working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
+        command: orderer
+        ports: 
+            #- 17076:17076
+            #- 17076:17077 #docker 내부 포트 : host OS 작동 포트 
+            - 7050:7050
+        volumes:
+            - ./config/:/etc/hyperledger/configtx
+            - ./crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/:/etc/hyperledger/msp/orderer
+            #- ./crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/:/etc/hyperledger/msp/peerOrg1
+        networks:
+            - BDTVote
+
+    peer0.org1.example.com:
+        container_name: peer0.org1.example.com
+        image: hyperledger/fabric-peer${DOCKER_IMG_TAG}
+        environment: 
+            - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+            - CORE_PEER_ID=peer0.org1.example.com
+            - CORE_LOGGING_PEER=debug
+            - CORE_CHAINCODE_LOGGING_LEVEL=DEBUG
+            - CORE_PEER_LOCALMSPID=Org1MSP
+            - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+            - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+            - CORE_PEER_CHAINCODEADDRESS=peer0.org1.example.com:7052
+            - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+            - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb:5984
+            - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+            - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+            - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
+            - CORE_PEER_GOSSIP_ENDPOINT=peer0.org1.example.com:7051
+            - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
+            - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=net_BDTVote
+            # # the following setting starts chaincode containers on the same
+            # # bridge network as the peers
+            # # https://docs.docker.com/compose/networking/
+
+            # - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+            # - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb:5984
+            
+            # The CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME and CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD
+            # provide the credentials for ledger to connect to CouchDB.  The username and password must
+            # match the username and password set for the associated CouchDB
+
+            # - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+            # - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+        working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+        command: peer node start
+        ports: 
+            # - 17071:17071
+            # - 17072:17072
+            # - 17073:17073
+            - 7051:7051
+            - 7053:7053
+            - 7052:7052
+            #- 17072:17072
+        volumes:
+            - /var/run/:/host/var/run/
+            - ./crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/msp/peer
+            - ./crypto-config/peerOrganizations/org1.example.com/users:/etc/hyperledger/msp/users
+            - ./config:/etc/hyperledger/configtx
+
+        depends_on:
+            - orderer.example.com
+            - couchdb
+        networks:
+            - BDTVote
+
+
+    couchdb:
+        container_name: couchdb
+        image: hyperledger/fabric-couchdb
+        # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+        # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+
+        environment:
+            - COUCHDB_USER=
+            - COUCHDB_PASSWORD=
+        ports:
+            - 5984:5984
+        networks:
+            - BDTVote
+
+    cli:
+        container_name: cli
+        image: hyperledger/fabric-tools${DOCKER_IMG_TAG}
+        tty: true
+        stdin_open: true
+        dns_search: .
+        environment:
+            - GOPATH=/opt/gopath
+            - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+            - FABRIC_LOGGING_SPEC=INFO
+            - CORE_PEER_ID=cli
+            - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+            - CORE_PEER_LOCALMSPID=Org1MSP
+            - CORE_PEER_TLS_ENABLED=false
+            - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+            - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.example.com/tls/ca.crt
+            - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.example.com/tls/server.crt
+            - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.example.com/tls/server.key
+            - CORE_CHAINCODE_KEEPALIVE=10
+        working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+        command: /bin/bash
+        volumes:
+            - /var/run/:/host/var/run/
+            - ./contract:/opt/gopath/src/chaincode/
+            - ./config:/etc/hyperledger/configtx
+            - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+        networks:
+            - BDTVote
+
+                    
